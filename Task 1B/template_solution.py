@@ -76,13 +76,13 @@ def fit(X, y):
     weights = weights - 0.1*gradL
     
     L_old = L
-    L = np.mean((y- X_input @ weights_old.T)**2)
+    L = np.mean((y- X_input @ weights.T)**2)
     
     while abs(L - L_old) > epsilon:
         gradL = (2 / 700) * (X_input.T @ X_input @ weights - X_input.T @ y)
         weights = weights - 0.1*gradL
         L_old = L
-        L = np.mean((y- X_input @ weights_old.T)**2)
+        L = np.mean((y- X_input @ weights.T)**2)
         
     assert weights.shape == (21,)
     return weights
