@@ -76,11 +76,14 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
 
     # TODO: Enter your code here. Hint: Use functions 'fit' and 'calculate_RMSE' with training and test data
     # and fill all entries in the matrix 'RMSE_mat'
-    kf = KFold(n_splits=n_folds)
-
-    for i in range(len(lambdas)):
-        for train, test in kf.split(X):
-            RMSE_mat[test][i] = calculate_RMSE(fit(X[train],y[train],lambdas[i]), X, y)
+    kf = KFold(n_folds)
+    for fold_idx, (train_idx, test_idx) in enumerate(kf.split(X)):
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+    
+        for lam_idx, lam in enumerate(lambdas):
+            w = fit(X_train, y_train, lam)  # Compute ridge regression weights
+            RMSE_mat[fold_idx, lam_idx] = calculate_RMSE(w, X_test, y_test)
 
     avg_RMSE = np.mean(RMSE_mat, axis=0)
     assert avg_RMSE.shape == (5,)
