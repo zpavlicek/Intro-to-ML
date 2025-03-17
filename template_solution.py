@@ -47,6 +47,9 @@ def calculate_RMSE(w, X, y):
     """
     rmse = 0
     # TODO: Enter your code here
+    y_pred = X @ w  
+    mse = np.mean((y - y_pred) ** 2)  
+    rmse = np.sqrt(mse)
     assert np.isscalar(rmse)
     return rmse
 
