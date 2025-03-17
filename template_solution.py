@@ -27,6 +27,8 @@ def fit(X, y, lam):
     """
     weights = np.zeros((13,))
     # TODO: Enter your code here
+    I = np.eye(13)
+    weights = np.linalg.inv(X.T @ X + lam*I) @ (X.T) @ y
     assert weights.shape == (13,)
     return weights
 
