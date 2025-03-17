@@ -76,6 +76,11 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
 
     # TODO: Enter your code here. Hint: Use functions 'fit' and 'calculate_RMSE' with training and test data
     # and fill all entries in the matrix 'RMSE_mat'
+    kf = KFold(n_splits=n_folds)
+
+    for i in range(len(lambdas)):
+        for train, test in kf.split(X):
+            RMSE_mat[test][i] = calculate_RMSE(fit(X[train],y[train],lambdas[i]), X, y)
 
     avg_RMSE = np.mean(RMSE_mat, axis=0)
     assert avg_RMSE.shape == (5,)
