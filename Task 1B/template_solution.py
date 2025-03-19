@@ -28,6 +28,7 @@ def transform_data(X):
     """
     X_input = np.zeros((700, 21))
     # TODO: Enter your code here
+    
     for column in range (21):
         if column <= 4:
             X_input[:,column] = X[:,column]
@@ -39,8 +40,24 @@ def transform_data(X):
             X_input[:,column] = np.cos(X[:,column%5])
         else:
             X_input[:,column] = np.ones(700)
+    """
+    # Linear features
+    X_input[:, :5] = X
+    
+    # Quadratic features
+    X_input[:, 5:10] = X**2
+    
+    # Exponential features
+    X_input[:, 10:15] = np.exp(X)
+    
+    # Cosine features
+    X_input[:, 15:20] = np.cos(X)
+    
+    # Constant feature
+    X_input[:, 20] = 1
+    """
     assert X_input.shape == (700, 21)
-    print(X_input)
+    #print(X_input)
     return X_input
 
 
@@ -62,27 +79,32 @@ def fit(X, y):
     weights = np.zeros((21,))
     X_input = transform_data(X)
     # TODO: Enter your code here
-    #weights = np.linalg.inv(X_input.T @ X_input) @ X_input.T @ y
+    """
+    weights = np.linalg.pinv(X_input.T @ X_input) @ X_input.T @ y
+    """
     
-    epsilon = 0.0001
-    print("Shape of X:", X_input.shape)
-    print("Shape of w.T:", weights.T.shape)
-    print("Shape of y:", y.shape)
+    
+    epsilon = 1e-7
+    learning_rate = 0.05
+    #print("Shape of X:", X_input.shape)
+    #print("Shape of w.T:", weights.T.shape)
+    #print("Shape of y:", y.shape)
 
     L = np.mean((y- X_input @ weights.T)**2)
     gradL = (2 / 700) * (X_input.T @ X_input @ weights - X_input.T @ y)
     
-    weights_old = weights
-    weights = weights - 0.1*gradL
+    weights = weights - learning_rate*gradL
     
     L_old = L
     L = np.mean((y- X_input @ weights.T)**2)
     
-    while abs(L - L_old) > epsilon:
+    while np.abs(L - L_old) > epsilon:
         gradL = (2 / 700) * (X_input.T @ X_input @ weights - X_input.T @ y)
-        weights = weights - 0.1*gradL
+        weights = weights - learning_rate*gradL
         L_old = L
         L = np.mean((y- X_input @ weights.T)**2)
+        print(L)
+    
         
     assert weights.shape == (21,)
     return weights
@@ -99,7 +121,7 @@ if __name__ == "__main__":
    
 
     X = data.to_numpy()
-    transform_data(X)
+    #transform_data(X)
     np.savetxt("matrix.csv", transform_data(X), delimiter=",", fmt="%.4f")
     # The function retrieving optimal LR parameters
     w = fit(X, y)
