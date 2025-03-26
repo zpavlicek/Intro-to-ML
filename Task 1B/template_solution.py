@@ -67,13 +67,13 @@ def fit(X, y):
     Tried to compute the pseudoinverse but not efficient enough:
     weights = np.linalg.pinv(X_input.T @ X_input) @ X_input.T @ y
     """
+    
     #Number of input vectors x
     n = 700
     
-    #Momentum-based Gradient Descent Implmentation
-    epsilon = 1e-7
+    #Gradient Descent Implmentation
+    epsilon = 1e-9
     learning_rate = 0.05
-    beta = 0.5*learning_rate
 
     #The chosen loss function is the squared loss so we get the following Training loss
     L = np.mean((y- X_input @ weights.T)**2)
@@ -90,10 +90,11 @@ def fit(X, y):
     while np.abs(L - L_old) > epsilon:
         gradL = (2 / n) * (X_input.T @ X_input @ weights - X_input.T @ y)
         weights_old = weights                                                       
-        weights = weights + beta(weights - weights_old) - learning_rate*gradL       #Upadte rule with momentum
-        L_old = L                                                                   #Store old Training loss for condition
-        L = np.mean((y- X_input @ weights.T)**2)                                    #Compute th new Training loss
+        weights = weights - learning_rate*gradL      #Upadte rule
+        L_old = L                                    #Store old Training loss for condition
+        L = np.mean((y- X_input @ weights.T)**2)     #Compute th new Training loss
     print(L)
+
     assert weights.shape == (21,)
     return weights
 
@@ -107,7 +108,6 @@ if __name__ == "__main__":
     # print a few data samples
     print(data.head())
    
-
     X = data.to_numpy()
     #transform_data(X)
     np.savetxt("matrix.csv", transform_data(X), delimiter=",", fmt="%.4f")
@@ -115,7 +115,3 @@ if __name__ == "__main__":
     w = fit(X, y)
     # Save results in the required format
     np.savetxt("./results.csv", w, fmt="%.12f")
-    
-    y_pred = X @ w  
-    mse = np.mean((y - y_pred) ** 2) 
-    print(mse)
