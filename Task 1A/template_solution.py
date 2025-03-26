@@ -28,7 +28,8 @@ def fit(X, y, lam):
     weights = np.zeros((13,))
     # TODO: Enter your code here
     I = np.eye(13)
-    weights = np.linalg.inv(X.T @ X + lam*I) @ (X.T) @ y
+    #Compute the ridge regression closed-form solution:
+    weights = np.linalg.inv(X.T @ X + lam*I) @ (X.T) @ y 
     assert weights.shape == (13,)
     return weights
 
@@ -49,8 +50,11 @@ def calculate_RMSE(w, X, y):
     """
     rmse = 0
     # TODO: Enter your code here
+    # Predict target values using the current weights
     y_pred = X @ w  
+    # Compute mean squared error (MSE)
     mse = np.mean((y - y_pred) ** 2)  
+    # Take the square root of MSE to get RMSE
     rmse = np.sqrt(mse)
     assert np.isscalar(rmse)
     return rmse
@@ -77,14 +81,21 @@ def average_LR_RMSE(X, y, lambdas, n_folds):
     # TODO: Enter your code here. Hint: Use functions 'fit' and 'calculate_RMSE' with training and test data
     # and fill all entries in the matrix 'RMSE_mat'
     kf = KFold(n_folds)
+    
+     # Iterate through each train-test split
     for fold_idx, (train_idx, test_idx) in enumerate(kf.split(X)):
+        # Split the data
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
     
+        # Loop over all lambda values
         for lam_idx, lam in enumerate(lambdas):
-            w = fit(X_train, y_train, lam)  # Compute ridge regression weights
+            # Fit model using training data
+            w = fit(X_train, y_train, lam) 
+            # Compute RMSE on the test set and store it
             RMSE_mat[fold_idx, lam_idx] = calculate_RMSE(w, X_test, y_test)
 
+    # Average the RMSEs across folds for each lambda
     avg_RMSE = np.mean(RMSE_mat, axis=0)
     assert avg_RMSE.shape == (5,)
     return avg_RMSE
