@@ -40,24 +40,8 @@ def transform_data(X):
             X_input[:,column] = np.cos(X[:,column%5])
         else:
             X_input[:,column] = np.ones(700)
-    """
-    # Linear features
-    X_input[:, :5] = X
-    
-    # Quadratic features
-    X_input[:, 5:10] = X**2
-    
-    # Exponential features
-    X_input[:, 10:15] = np.exp(X)
-    
-    # Cosine features
-    X_input[:, 15:20] = np.cos(X)
-    
-    # Constant feature
-    X_input[:, 20] = 1
-    """
+            
     assert X_input.shape == (700, 21)
-    #print(X_input)
     return X_input
 
 
@@ -80,32 +64,36 @@ def fit(X, y):
     X_input = transform_data(X)
     # TODO: Enter your code here
     """
+    Tried to compute the pseudoinverse but not efficient enough:
     weights = np.linalg.pinv(X_input.T @ X_input) @ X_input.T @ y
     """
+    #Number of input vectors x
+    n = 700
     
-    
+    #Momentum-based Gradient Descent Implmentation
     epsilon = 1e-7
     learning_rate = 0.05
-    #print("Shape of X:", X_input.shape)
-    #print("Shape of w.T:", weights.T.shape)
-    #print("Shape of y:", y.shape)
+    beta = 0.5*learning_rate
 
+    #The chosen loss function is the squared loss so we get the following Training loss
     L = np.mean((y- X_input @ weights.T)**2)
-    gradL = (2 / 700) * (X_input.T @ X_input @ weights - X_input.T @ y)
     
+    #Gradient of the Training loss
+    gradL = (2 / n) * (X_input.T @ X_input @ weights - X_input.T @ y)
+    
+    #Our inital guess is w = 0
     weights = weights - learning_rate*gradL
     
     L_old = L
     L = np.mean((y- X_input @ weights.T)**2)
     
     while np.abs(L - L_old) > epsilon:
-        gradL = (2 / 700) * (X_input.T @ X_input @ weights - X_input.T @ y)
-        weights = weights - learning_rate*gradL
-        L_old = L
-        L = np.mean((y- X_input @ weights.T)**2)
-        print(L)
-    
-        
+        gradL = (2 / n) * (X_input.T @ X_input @ weights - X_input.T @ y)
+        weights_old = weights                                                       
+        weights = weights + beta(weights - weights_old) - learning_rate*gradL       #Upadte rule with momentum
+        L_old = L                                                                   #Store old Training loss for condition
+        L = np.mean((y- X_input @ weights.T)**2)                                    #Compute th new Training loss
+    print(L)
     assert weights.shape == (21,)
     return weights
 
@@ -127,3 +115,7 @@ if __name__ == "__main__":
     w = fit(X, y)
     # Save results in the required format
     np.savetxt("./results.csv", w, fmt="%.12f")
+    
+    y_pred = X @ w  
+    mse = np.mean((y - y_pred) ** 2) 
+    print(mse)
