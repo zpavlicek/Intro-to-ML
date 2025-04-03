@@ -1,3 +1,4 @@
+
 # This serves as a template which will guide you through the implementation of this task.  It is advised
 # to first read the whole template and get a sense of the overall structure of the code before trying to fill in any of the TODO gaps
 # First, we import necessary libraries:
@@ -25,9 +26,20 @@ def data_loading():
     print(train_df.head(2))
     print('\n')
     
+    X_train = train_df.drop(columns=['price_CHF', "season"])
+    print(X_train)
+   
+    X_train = X_train.to_numpy()
+    print(X_train)
+    
     # Load test data
     test_df = pd.read_csv("test.csv")
 
+    np.savetxt("data_matrix.csv", X_train, delimiter=",", fmt="%.4f")
+    
+    y_train = train_df["price_CHF"].to_numpy()
+    np.savetxt("y_train.csv", X_train, delimiter=",", fmt="%.4f")
+    
     print("Test data:")
     print(test_df.shape)
     print(test_df.head(2))
@@ -35,7 +47,67 @@ def data_loading():
     # Dummy initialization of the X_train, X_test and y_train
     # TODO: Depending on how you deal with the non-numeric data, you may want to 
     # modify/ignore the initialization of these variables   
-    X_train = np.zeros_like(train_df.drop(['price_CHF'],axis=1))
+    
+    for column in range (X_train.shape[1]):
+        for row in range (X_train.shape[0]):
+    
+            if np.isnan(X_train[row, column]): 
+                season_index = row % 4  # 0: spring, 1: summer, etc.
+                valid_values = []
+
+                # Look before
+                count = 0
+                i = row - 1
+                while i >= 0 and count < 5:
+                    if i % 4 == season_index and not np.isnan(X_train[i, column]):
+                        valid_values.append(X_train[i, column])
+                        count += 1
+                    i -= 1
+
+                # Look after
+                count = 0
+                i = row + 1
+                while i < X_train.shape[0] and count < 5:
+                    if i % 4 == season_index and not np.isnan(X_train[i, column]):
+                        valid_values.append(X_train[i, column])
+                        count += 1
+                    i += 1
+
+                if valid_values:
+                    X_train[row, column] = np.mean(valid_values)
+            
+    np.savetxt("data_matrix_mean.csv", X_train, delimiter=",", fmt="%.4f")
+    
+    for index in range(y_train.shape[0]):
+        if np.isnan(y_train[index]):
+            season_index = index % 4  # Group by season pattern
+
+            valid_values = []
+
+            # Look 5 values before (same season)
+            i = index - 1
+            count = 0
+            while i >= 0 and count < 5:
+                if i % 4 == season_index and not np.isnan(y_train[i]):
+                    valid_values.append(y_train[i])
+                    count += 1
+                i -= 1
+
+            # Look 5 values after (same season)
+            i = index + 1
+            count = 0
+            while i < y_train.shape[0] and count < 5:
+                if i % 4 == season_index and not np.isnan(y_train[i]):
+                    valid_values.append(y_train[i])
+                    count += 1
+                i += 1
+
+            # Replace NaN with mean of same-season values
+            if valid_values:
+                y_train[index] = np.mean(valid_values)
+        
+    np.savetxt("y_train_mean.csv", y_train, delimiter=",", fmt="%.4f")
+    
     y_train = np.zeros_like(train_df['price_CHF'])
     X_test = np.zeros_like(test_df)
 
@@ -76,4 +148,4 @@ if __name__ == "__main__":
     dt.columns = ['price_CHF']
     dt.to_csv('results.csv', index=False)
     print("\nResults file successfully generated!")
-
+    
