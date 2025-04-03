@@ -31,14 +31,15 @@ def data_loading():
    
     X_train = X_train.to_numpy()
     print(X_train)
+    np.savetxt("data_matrix.csv", X_train, delimiter=",", fmt="%.4f")
+    y_train = train_df["price_CHF"].to_numpy()
+    np.savetxt("y_train.csv", y_train, delimiter=",", fmt="%.4f")
     
     # Load test data
     test_df = pd.read_csv("test.csv")
 
-    np.savetxt("data_matrix.csv", X_train, delimiter=",", fmt="%.4f")
-    
-    y_train = train_df["price_CHF"].to_numpy()
-    np.savetxt("y_train.csv", X_train, delimiter=",", fmt="%.4f")
+    X_test = test_df.drop(columns=["season"])
+    X_test = X_test.to_numpy()
     
     print("Test data:")
     print(test_df.shape)
@@ -108,8 +109,36 @@ def data_loading():
         
     np.savetxt("y_train_mean.csv", y_train, delimiter=",", fmt="%.4f")
     
-    y_train = np.zeros_like(train_df['price_CHF'])
-    X_test = np.zeros_like(test_df)
+    for column in range (X_test.shape[1]):
+        for row in range (X_test.shape[0]):
+    
+            if np.isnan(X_test[row, column]): 
+                season_index = row % 4  # 0: spring, 1: summer, etc.
+                valid_values = []
+
+                # Look before
+                count = 0
+                i = row - 1
+                while i >= 0 and count < 5:
+                    if i % 4 == season_index and not np.isnan(X_test[i, column]):
+                        valid_values.append(X_test[i, column])
+                        count += 1
+                    i -= 1
+
+                # Look after
+                count = 0
+                i = row + 1
+                while i < X_test.shape[0] and count < 5:
+                    if i % 4 == season_index and not np.isnan(X_test[i, column]):
+                        valid_values.append(X_test[i, column])
+                        count += 1
+                    i += 1
+
+                if valid_values:
+                    X_test[row, column] = np.mean(valid_values)
+            
+    np.savetxt("test_matrix_mean.csv", X_test, delimiter=",", fmt="%.4f")
+    
 
     # TODO: Perform data preprocessing, imputation and extract X_train, y_train and X_test
 
@@ -127,7 +156,7 @@ class Model(object):
         #TODO: Define the model and fit it using (X_train, y_train)
         self._x_train = X_train
         self._y_train = y_train
-
+    
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         y_pred=np.zeros(X_test.shape[0])
         #TODO: Use the model to make predictions y_pred using test data X_test
