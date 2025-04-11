@@ -63,7 +63,7 @@ def data_loading():
                 # Look before
                 count = 0
                 i = row - 1
-                while i >= 0 and count < 5:
+                while i >= 0 and count < 1:
                     if i % 4 == season_index and not np.isnan(X_train[i, column]):
                         valid_values.append(X_train[i, column])
                         count += 1
@@ -72,7 +72,7 @@ def data_loading():
                 # Look after
                 count = 0
                 i = row + 1
-                while i < X_train.shape[0] and count < 5:
+                while i < X_train.shape[0] and count < 1:
                     if i % 4 == season_index and not np.isnan(X_train[i, column]):
                         valid_values.append(X_train[i, column])
                         count += 1
@@ -92,7 +92,7 @@ def data_loading():
             # Look 5 values before (same season)
             i = index - 1
             count = 0
-            while i >= 0 and count < 5:
+            while i >= 0 and count < 1:
                 if i % 4 == season_index and not np.isnan(y_train[i]):
                     valid_values.append(y_train[i])
                     count += 1
@@ -101,7 +101,7 @@ def data_loading():
             # Look 5 values after (same season)
             i = index + 1
             count = 0
-            while i < y_train.shape[0] and count < 5:
+            while i < y_train.shape[0] and count < 1:
                 if i % 4 == season_index and not np.isnan(y_train[i]):
                     valid_values.append(y_train[i])
                     count += 1
@@ -123,7 +123,7 @@ def data_loading():
                 # Look before
                 count = 0
                 i = row - 1
-                while i >= 0 and count < 5:
+                while i >= 0 and count < 1:
                     if i % 4 == season_index and not np.isnan(X_test[i, column]):
                         valid_values.append(X_test[i, column])
                         count += 1
@@ -132,7 +132,7 @@ def data_loading():
                 # Look after
                 count = 0
                 i = row + 1
-                while i < X_test.shape[0] and count < 5:
+                while i < X_test.shape[0] and count < 1:
                     if i % 4 == season_index and not np.isnan(X_test[i, column]):
                         valid_values.append(X_test[i, column])
                         count += 1
@@ -156,18 +156,10 @@ class Model(object):
         self._x_train = None
         self._y_train = None
         self._model = None
-        self._scaler = StandardScaler() 
+        self._scaler = MinMaxScaler() 
 
     def cross_validate_and_select_kernel(self, X: np.ndarray, y: np.ndarray, k=3):
-        kernels = [DotProduct(),
-        RBF(length_scale=1.0),
-        Matern(length_scale=1.0, nu=1.5),
-        RationalQuadratic(length_scale=1.0, alpha=1.0),
-        RBF() + WhiteKernel(),
-        RationalQuadratic() + WhiteKernel(),
-        DotProduct() + WhiteKernel(),
-        RBF() + DotProduct() + WhiteKernel(),
-        RBF()*Matern()*RationalQuadratic()]
+        kernels = [DotProduct(), RBF(), RBF() + RationalQuadratic() * DotProduct(), Matern(), WhiteKernel(), RationalQuadratic(), RBF() * RationalQuadratic() * DotProduct()]
         kf = KFold(n_splits=k, shuffle=True, random_state=42)
         mse_values_per_kernel = {str(kernel): [] for kernel in kernels}
 
@@ -177,9 +169,9 @@ class Model(object):
                 X_train, X_val = X[train_idx], X[val_idx]
                 y_train, y_val = y[train_idx], y[val_idx]
 
-                scaler = MinMaxScaler()
-                X_scaled = scaler.fit_transform(X_train)
-                X_val_scaled = scaler.transform(X_val)
+                self.scaler = MinMaxScaler()
+                X_scaled = self.scaler.fit_transform(X_train)
+                X_val_scaled = self.scaler.transform(X_val)
                 
                 gpr = GaussianProcessRegressor(kernel=kernel, normalize_y = True)
                 gpr.fit(X_scaled, y_train)
