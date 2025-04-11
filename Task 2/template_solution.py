@@ -4,6 +4,9 @@
 # First, we import necessary libraries:
 import numpy as np
 import pandas as pd
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import DotProduct, RBF, Matern, RationalQuadratic, WhiteKernel, Product, PairwiseKernel, Exponentiation, CompoundKernel
+from sklearn.model_selection import KFold
 
 def data_loading():
     """
@@ -30,8 +33,8 @@ def data_loading():
     print(X_train)
    
     X_train = X_train.to_numpy()
-    print(X_train)
     np.savetxt("data_matrix.csv", X_train, delimiter=",", fmt="%.4f")
+    
     y_train = train_df["price_CHF"].to_numpy()
     np.savetxt("y_train.csv", y_train, delimiter=",", fmt="%.4f")
     
@@ -41,9 +44,9 @@ def data_loading():
     X_test = test_df.drop(columns=["season"])
     X_test = X_test.to_numpy()
     
-    print("Test data:")
-    print(test_df.shape)
-    print(test_df.head(2))
+    #print("Test data:")
+    #print(test_df.shape)
+    #print(test_df.head(2))
 
     # Dummy initialization of the X_train, X_test and y_train
     # TODO: Depending on how you deal with the non-numeric data, you may want to 
@@ -151,18 +154,65 @@ class Model(object):
         super().__init__()
         self._x_train = None
         self._y_train = None
+        self._model = None
+
+    def cross_validate_and_select_kernel(self, X: np.ndarray, y: np.ndarray, k=5):
+        kernels = []
+        kf = KFold(n_splits=k, shuffle=True, random_state=42)
+        mse_values_per_kernel = {str(kernel): [] for kernel in kernels}
+
+        for kernel in kernels:
+            print(f'\nTesting kernel: {kernel}')
+            for train_idx, val_idx in kf.split(X):
+                X_train, X_val = X[train_idx], X[val_idx]
+                y_train, y_val = y[train_idx], y[val_idx]
+
+                gpr = GaussianProcessRegressor(kernel=kernel)
+                gpr.fit(X_train, y_train)
+                y_pred_train = gpr.predict(X_val)
+
+                mse = np.mean((y_val-y_pred_train)**2)
+                mse_values_per_kernel[str(kernel)].append(mse)
+                print(f'Fold MSE: {mse:.4f}')
+
+            avg_mse = np.mean(mse_values_per_kernel[str(kernel)])
+            print(f'Average MSE for kernel {kernel}: {avg_mse:.4f}')
+
+        best_kernel_str = min(mse_values_per_kernel, key=lambda k: np.mean(mse_values_per_kernel[k]))
+        print(f'\nBest kernel based on average MSE: {best_kernel_str}')
+
+        # Create best kernel object again (string to object workaround)
+        for kernel in kernels:
+            if str(kernel) == best_kernel_str:
+                return kernel
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
-        #TODO: Define the model and fit it using (X_train, y_train)
         self._x_train = X_train
         self._y_train = y_train
-    
+        best_kernel = self.cross_validate_and_select_kernel(X_train, y_train)
+        print(f"\nTraining final model with best kernel: {best_kernel}")
+        self._model = GaussianProcessRegressor(kernel=best_kernel)
+        self._model.fit(X_train, y_train)
+
     def predict(self, X_test: np.ndarray) -> np.ndarray:
-        y_pred=np.zeros(X_test.shape[0])
-        #TODO: Use the model to make predictions y_pred using test data X_test
+        if self._model is None:
+            raise Exception("Model not trained. Please call train() first.")
+        y_pred = self._model.predict(X_test)
         assert y_pred.shape == (X_test.shape[0],), "Invalid data shape"
         return y_pred
 
+
+def r_squared(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    y_mean = np.mean(y_true)
+    
+    ss_res = np.sum((y_true - y_pred) ** 2)  # Residual sum of squares
+    ss_tot = np.sum((y_true - y_mean) ** 2)  # Total sum of squares
+
+    r2 = 1 - (ss_res / ss_tot)
+    return r2
+    
 # Main function. You don't have to change this
 if __name__ == "__main__":
     # Data loading
